@@ -9,13 +9,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	kblabels "k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"nocalhost/internal/nhctl/appmeta"
 	"nocalhost/internal/nhctl/common/base"
 	_const "nocalhost/internal/nhctl/const"
@@ -29,6 +22,14 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	kblabels "k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Controller presents a k8s controller
@@ -268,6 +269,14 @@ func (c *Controller) getGeneratedDeploymentLabels() map[string]string {
 	}
 }
 
+func (c *Controller) sidecarContainerSSHUsed(ops *model.DevStartOptions) bool {
+	if strings.Contains(ops.DevImage, "php") {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (c *Controller) PatchDevModeManifest(ctx context.Context, ops *model.DevStartOptions) error {
 	c.Client.Context(ctx)
 
@@ -313,7 +322,7 @@ func (c *Controller) PatchDevModeManifest(ctx context.Context, ops *model.DevSta
 	podSpec := &podTemplate.Spec
 
 	devContainer, sideCarContainer, devModeVolumes, err :=
-		c.genContainersAndVolumes(podSpec, ops.Container, ops.DevImage, ops.StorageClass, false)
+		c.genContainersAndVolumes(podSpec, ops.Container, ops.DevImage, ops.StorageClass, false, c.sidecarContainerSSHUsed(ops))
 	if err != nil {
 		return err
 	}

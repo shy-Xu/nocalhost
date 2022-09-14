@@ -9,12 +9,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	_const "nocalhost/internal/nhctl/const"
 	"nocalhost/internal/nhctl/model"
 	"nocalhost/pkg/nhctl/log"
 	"time"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 //const originalPodDefine = "nocalhost.dev.origin.pod.define"
@@ -53,7 +54,7 @@ func (r *RawPodController) ReplaceImage(ctx context.Context, ops *model.DevStart
 		r.GetDevContainerName(ops.Container)
 
 	devContainer, sideCarContainer, devModeVolumes, err :=
-		r.genContainersAndVolumes(&originalPod.Spec, ops.Container, ops.DevImage, ops.StorageClass, false)
+		r.genContainersAndVolumes(&originalPod.Spec, ops.Container, ops.DevImage, ops.StorageClass, false, r.sidecarContainerSSHUsed(ops))
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	_const "nocalhost/internal/nhctl/const"
+	"nocalhost/internal/nhctl/model"
+	"nocalhost/pkg/nhctl/clientgoutils"
+	"nocalhost/pkg/nhctl/log"
+	"strconv"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/tidwall/sjson"
 	appsv1 "k8s.io/api/apps/v1"
@@ -20,12 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
-	_const "nocalhost/internal/nhctl/const"
-	"nocalhost/internal/nhctl/model"
-	"nocalhost/pkg/nhctl/clientgoutils"
-	"nocalhost/pkg/nhctl/log"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -90,7 +91,7 @@ func (c *Controller) ReplaceDuplicateModeImage(ctx context.Context, ops *model.D
 		podTemplate.Annotations = c.getDevContainerAnnotations(ops.Container, podTemplate.Annotations)
 
 		devContainer, sideCarContainer, devModeVolumes, err :=
-			c.genContainersAndVolumes(&podTemplate.Spec, ops.Container, ops.DevImage, ops.StorageClass, true)
+			c.genContainersAndVolumes(&podTemplate.Spec, ops.Container, ops.DevImage, ops.StorageClass, true, c.sidecarContainerSSHUsed(ops))
 		if err != nil {
 			return err
 		}
@@ -205,7 +206,7 @@ func (c *Controller) ReplaceDuplicateModeImage(ctx context.Context, ops *model.D
 
 		devContainer, sideCarContainer, devModeVolumes, err :=
 			c.genContainersAndVolumes(
-				&genDeploy.Spec.Template.Spec, ops.Container, ops.DevImage, ops.StorageClass, true,
+				&genDeploy.Spec.Template.Spec, ops.Container, ops.DevImage, ops.StorageClass, true, c.sidecarContainerSSHUsed(ops),
 			)
 		if err != nil {
 			return err

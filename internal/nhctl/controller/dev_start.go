@@ -7,11 +7,12 @@ package controller
 
 import (
 	"fmt"
+	_const "nocalhost/internal/nhctl/const"
+	"strconv"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"nocalhost/internal/nhctl/const"
-	"strconv"
 
 	//"nocalhost/internal/nhctl/common/base"
 	"nocalhost/internal/nhctl/nocalhost"
@@ -364,7 +365,7 @@ func (c *Controller) createPvcForPersistentVolumeDir(
 	return nil, errors.New("Failed to create pvc for " + persistentVolume.Path)
 }
 
-func generateSideCarContainer(sidecarImage, workDir string) corev1.Container {
+func generateSideCarContainer(sidecarImage, workDir string, sshUsed bool) corev1.Container {
 	if sidecarImage == "" {
 		sidecarImage = _const.DefaultSideCarImage
 	}
@@ -373,6 +374,12 @@ func generateSideCarContainer(sidecarImage, workDir string) corev1.Container {
 		Name:       "nocalhost-sidecar",
 		Image:      sidecarImage,
 		WorkingDir: workDir,
+	}
+
+	if sshUsed {
+		var rootUID int64 = 0
+		sideCarContainer.SecurityContext = &corev1.SecurityContext{RunAsUser: &rootUID}
+		sideCarContainer.Image = _const.SSHSideCarImage
 	}
 
 	// over write syncthing command
@@ -561,7 +568,7 @@ func containerStatusForDevPod(pod *corev1.Pod, consumeFun func(status string, er
 }
 
 func (c *Controller) genContainersAndVolumes(podSpec *corev1.PodSpec,
-	containerName, devImage, storageClass string, duplicateDevMode bool) (*corev1.Container,
+	containerName, devImage, storageClass string, duplicateDevMode bool, sshUsed bool) (*corev1.Container,
 	*corev1.Container, []corev1.Volume, error) {
 
 	devContainer, err := findDevContainerInPodSpec(podSpec, containerName)
@@ -603,7 +610,7 @@ func (c *Controller) genContainersAndVolumes(podSpec *corev1.PodSpec,
 		devImage = c.GetDevImage(containerName) // Default : replace the first container
 	}
 
-	sideCarContainer := generateSideCarContainer(c.GetDevSidecarImage(containerName), workDir)
+	sideCarContainer := generateSideCarContainer(c.GetDevSidecarImage(containerName), workDir, sshUsed)
 
 	devContainer.Image = devImage
 	devContainer.Name = c.GetDevContainerName(containerName)

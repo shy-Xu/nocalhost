@@ -9,12 +9,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	_const "nocalhost/internal/nhctl/const"
 	"nocalhost/internal/nhctl/model"
 	"nocalhost/pkg/nhctl/log"
 	"time"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type DuplicateRawPodController struct {
@@ -75,7 +76,7 @@ func (r *DuplicateRawPodController) ReplaceImage(ctx context.Context, ops *model
 	originalPod.Annotations = r.getDevContainerAnnotations(ops.Container, originalPod.Annotations)
 
 	devContainer, sideCarContainer, devModeVolumes, err :=
-		r.genContainersAndVolumes(&originalPod.Spec, ops.Container, ops.DevImage, ops.StorageClass, true)
+		r.genContainersAndVolumes(&originalPod.Spec, ops.Container, ops.DevImage, ops.StorageClass, true, r.sidecarContainerSSHUsed(ops))
 	if err != nil {
 		return err
 	}
